@@ -1,6 +1,14 @@
 from core.models.assignments import AssignmentStateEnum, GradeEnum
 
 
+def test_get_teachers(client, h_principal):
+    response = client.get(
+        '/principal/teachers',
+        headers=h_principal
+    )
+
+    assert response.status_code == 200
+
 def test_get_assignments(client, h_principal):
     response = client.get(
         '/principal/assignments',
@@ -60,3 +68,41 @@ def test_regrade_assignment(client, h_principal):
 
     assert response.json['data']['state'] == AssignmentStateEnum.GRADED.value
     assert response.json['data']['grade'] == GradeEnum.B
+
+def test_badgrade_assignment(client, h_principal):
+    """
+    failure case: API should allow only grades available in enum
+    """
+
+    response = client.post(
+        '/principal/assignments/grade',
+        headers=h_principal,
+        json={
+            "id": 3,
+            "grade": "AB"
+        }
+    )
+
+    assert response.status_code == 400
+    data = response.json
+
+    assert data['error'] == 'ValidationError'
+
+def test_grade_bad_assignment(client, h_principal):
+    """
+    failure case: trying to rate an assignment that doesn't exist
+    """
+
+    response = client.post(
+        '/principal/assignments/grade',
+        headers=h_principal,
+        json={
+            "id": 100000,
+            "grade": "A"
+        }
+    )
+
+    assert response.status_code == 404
+    data = response.json
+
+    assert data['error'] == 'FyleError'

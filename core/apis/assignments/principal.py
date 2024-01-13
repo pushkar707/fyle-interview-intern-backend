@@ -5,7 +5,6 @@ from core.apis.responses import APIResponse
 from core.models.assignments import Assignment
 from core.models.teachers import Teacher
 from .schema import AssignmentSchema, AssignmentGradeSchema
-from core.models.assignments import AssignmentStateEnum
 
 principal_assignment_resources = Blueprint('principal_assignment_resources',__name__)
 
@@ -14,10 +13,6 @@ principal_assignment_resources = Blueprint('principal_assignment_resources',__na
 def list_assignments(p):
     students_assignments = Assignment.get_assignments_by_principal(p.principal_id)
     students_assignments_dump = AssignmentSchema().dump(students_assignments,many=True)
-    # assignments_json = [assignment.__dict__ for assignment in students_assignments]
-
-    # for assignment_dict in assignments_json:
-    #     assignment_dict.pop('_sa_instance_state', None)
     
     return APIResponse.respond(data=students_assignments_dump)
 
@@ -37,10 +32,6 @@ def list_teachers(p):
 @decorators.authenticate_principal
 def grade_assignment(p,incoming_payload):
     grade_assignment_payload = AssignmentGradeSchema().load(incoming_payload)
-
-    assignment = Assignment.get_by_id(grade_assignment_payload.id)
-    if(assignment.state == "DRAFT"):
-        return abort(400, "You cannot grade an assignment in draft")
 
     graded_assignment = Assignment.mark_grade_principal(
         _id = grade_assignment_payload.id,
