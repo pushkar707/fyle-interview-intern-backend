@@ -1,11 +1,11 @@
-from flask import Blueprint,jsonify
+from flask import Blueprint,abort
 from core import db
 from core.apis import decorators
 from core.apis.responses import APIResponse
 from core.models.assignments import Assignment
 from core.models.teachers import Teacher
-
 from .schema import AssignmentSchema, AssignmentGradeSchema
+from core.models.assignments import AssignmentStateEnum
 
 principal_assignment_resources = Blueprint('principal_assignment_resources',__name__)
 
@@ -38,7 +38,11 @@ def list_teachers(p):
 def grade_assignment(p,incoming_payload):
     grade_assignment_payload = AssignmentGradeSchema().load(incoming_payload)
 
-    graded_assignment = Assignment.mark_grade(
+    assignment = Assignment.get_by_id(grade_assignment_payload.id)
+    if(assignment.state == "DRAFT"):
+        return abort(400, "You cannot grade an assignment in draft")
+
+    graded_assignment = Assignment.mark_grade_principal(
         _id = grade_assignment_payload.id,
         grade=grade_assignment_payload.grade,
         auth_principal=p
